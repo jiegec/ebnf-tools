@@ -45,7 +45,7 @@ expr        ::= lit
               | 'new' type '[' expr ']'
               | 'instanceof' '(' expr ',' id ')' ;
 
-lit         ::= '114114' | 'true' | 'null' | 'string' ;
+lit         ::= '114114' | 'true' | 'null' | 'str' ;
 unaryOp     ::= '-' | '!' ;
 binaryOp    ::= '+' | '-' | '*' | '/' | '%' | '==' | '!=' | '<=' | '<' | '>=' | '>' | '&&' | '||' ;
 exprList    ::= expr (',' expr)* | _ ;

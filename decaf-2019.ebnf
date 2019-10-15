@@ -50,7 +50,7 @@ expr        ::= lit
               | 'fun' '(' varList ')' '=>' expr
               | 'fun' '(' varList ')' stmtBlock;
 
-lit         ::= '114114' | 'true' | 'null' | 'string' ;
+lit         ::= '114114' | 'true' | 'null' | 'str' ;
 unaryOp     ::= '-' | '!' ;
 binaryOp    ::= '+' | '-' | '*' | '/' | '%' | '==' | '!=' | '<=' | '<' | '>=' | '>' | '&&' | '||' ;
 exprList    ::= expr (',' expr)* | _ ;

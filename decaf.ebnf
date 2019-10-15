@@ -45,9 +45,9 @@ expr        ::= lit
               | 'new' type '[' expr ']'
               | 'instanceof' '(' expr ',' id ')' ;
 
-lit         ::= INT_LIT | BOOL_LIT | NULL_LIT | STRING_LIT ;
+lit         ::= '114114' | 'true' | 'null' | 'string' ;
 unaryOp     ::= '-' | '!' ;
 binaryOp    ::= '+' | '-' | '*' | '/' | '%' | '==' | '!=' | '<=' | '<' | '>=' | '>' | '&&' | '||' ;
 exprList    ::= expr (',' expr)* | _ ;
 
-id          ::= IDENTIFIER ;
+id          ::= 'someId' ;

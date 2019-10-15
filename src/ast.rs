@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+use std::collections::BTreeMap;
 use typed_arena::Arena;
 
 #[derive(Default)]
@@ -10,6 +12,7 @@ pub struct ASTAlloc<'a> {
 #[derive(Debug)]
 pub struct File<'a> {
     pub rules: Vec<RuleDef<'a>>,
+    pub mapping: RefCell<BTreeMap<&'a str, &'a RuleDef<'a>>>,
 }
 
 #[derive(Debug)]

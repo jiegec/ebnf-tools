@@ -2,12 +2,17 @@
 
 mod ast;
 mod errors;
+mod gen;
 mod loc;
 
 pub use ast::*;
 pub use errors::*;
+pub use gen::*;
 pub use loc::*;
+
 use parser_macros::lalr1;
+use std::cell::RefCell;
+use std::collections::BTreeMap;
 
 pub fn work<'p>(code: &'p str, alloc: &'p ASTAlloc<'p>) -> Result<&'p File<'p>, Errors> {
     let mut parser = Parser {
@@ -16,7 +21,13 @@ pub fn work<'p>(code: &'p str, alloc: &'p ASTAlloc<'p>) -> Result<&'p File<'p>, 
     };
     let mut lexer = Lexer::new(code.as_bytes()); // Lexer can be used independently from Parser, you can use it to debug
     match parser.parse(&mut lexer) {
-        Ok(program) if parser.error.0.is_empty() => Ok(program),
+        Ok(program) if parser.error.0.is_empty() => {
+            let mut mapping = program.mapping.borrow_mut();
+            for rule in program.rules.iter() {
+                mapping.insert(rule.name, rule);
+            }
+            Ok(program)
+        }
         Err(token) => {
             let mut error = parser.error;
             let loc = Loc(token.line, token.col);
@@ -77,8 +88,12 @@ priority = [
 )]
 impl<'p> Parser<'p> {
     #[rule(File -> RuleList)]
-    fn file(&self, l: Vec<RuleDef<'p>>) -> &'p File<'p> {
-        self.alloc.file.alloc(File { rules: l })
+    fn file(&self, mut l: Vec<RuleDef<'p>>) -> &'p File<'p> {
+        l.reverse();
+        self.alloc.file.alloc(File {
+            rules: l,
+            mapping: RefCell::new(BTreeMap::new()),
+        })
     }
 
     #[rule(RuleList -> Rule RuleList)]

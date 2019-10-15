@@ -31,9 +31,15 @@ impl<'a> Generate for Prod<'a> {
                 ll
             }
             Terminal(s) => String::from(&s[1..s.len() - 1]),
-            NonTerminal(s) => file.mapping.borrow().get(s).unwrap().generate(file),
+            NonTerminal(s) => {
+                if let Some(term) = file.mapping.borrow().get(s) {
+                    term.generate(file)
+                } else {
+                    panic!("{:?} not found", s)
+                }
+            }
             Optional(p) => {
-                if random() {
+                if random::<f64>() < 0.6 {
                     p.generate(file)
                 } else {
                     String::new()
@@ -41,7 +47,7 @@ impl<'a> Generate for Prod<'a> {
             }
             Star(p) => {
                 let mut result = String::new();
-                while random() {
+                while random::<f64>() < 0.6 {
                     result.push_str(&p.generate(file));
                 }
                 result
@@ -49,7 +55,7 @@ impl<'a> Generate for Prod<'a> {
             Plus(p) => {
                 let mut result = String::new();
                 result.push_str(&p.generate(file));
-                while random() {
+                while random::<f64>() < 0.6 {
                     result.push_str(&p.generate(file));
                 }
                 result

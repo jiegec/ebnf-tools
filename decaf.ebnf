@@ -1,0 +1,53 @@
+// Top level
+
+topLevel    ::= classDef+ ;
+classDef    ::= 'class' id ('extends' id)? '{' field* '}' ;
+field       ::= varDef | methodDef ;
+varDef      ::= var ';' ;
+methodDef   ::= 'static'? type id '(' varList ')' stmtBlock ;
+var         ::= type id ;
+varList     ::= var (',' var)* | _ ;
+
+// Types
+
+type        ::= 'int' | 'bool' | 'string' | 'void' | 'class' id
+              | type '[' ']' ;
+
+// Statements
+
+stmt        ::= stmtBlock
+              | simple ';'
+              | 'if' '(' expr ')' stmt ('else' stmt)?
+              | 'while' '(' expr ')' stmt
+              | 'for' '(' simple ';' expr ';' simple ')' stmt
+              | 'break' ';'
+              | 'return' expr? ';'
+              | 'Print' '(' exprList ')' ';' ;
+
+stmtBlock   ::= '{' stmt* '}' ;
+
+simple      ::= var ('=' expr)? | lValue '=' expr | expr | _ ;
+lValue      ::= (expr '.')? id | expr '[' expr ']' ;
+
+// Expressions
+
+expr        ::= lit
+              | 'this'
+              | lValue
+              | (expr '.')? id '(' exprList ')'
+              | '(' expr ')'
+              | unaryOp expr
+              | expr binaryOp expr
+              | '(' 'class' id ')' expr
+              | 'ReadInteger' '(' ')'
+              | 'ReadLine' '(' ')'
+              | 'new' id '(' ')'
+              | 'new' type '[' expr ']'
+              | 'instanceof' '(' expr ',' id ')' ;
+
+lit         ::= INT_LIT | BOOL_LIT | NULL_LIT | STRING_LIT ;
+unaryOp     ::= '-' | '!' ;
+binaryOp    ::= '+' | '-' | '*' | '/' | '%' | '==' | '!=' | '<=' | '<' | '>=' | '>' | '&&' | '||' ;
+exprList    ::= expr (',' expr)* | _ ;
+
+id          ::= IDENTIFIER ;

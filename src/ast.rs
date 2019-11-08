@@ -31,13 +31,15 @@ pub enum Prod<'a> {
     Eps,
 }
 
-#[derive(Debug)]
+pub type FlatProds<'a> = Vec<&'a FlatProd<'a>>;
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct FlatRuleDef<'a> {
     pub name: &'a str,
-    pub prod: Vec<&'a FlatProd<'a>>,
+    pub prod: FlatProds<'a>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Ord, PartialOrd, Clone)]
 pub enum FlatProd<'a> {
     Terminal(&'a str),
     NonTerminal(&'a str),

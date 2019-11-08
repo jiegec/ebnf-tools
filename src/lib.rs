@@ -5,12 +5,14 @@ mod errors;
 mod flatten;
 mod gen;
 mod loc;
+mod lr;
 
 pub use ast::*;
 pub use errors::*;
 pub use flatten::*;
 pub use gen::*;
 pub use loc::*;
+pub use lr::*;
 
 use parser_macros::lalr1;
 use std::cell::RefCell;

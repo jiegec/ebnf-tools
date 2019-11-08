@@ -1,12 +1,15 @@
 use crate::*;
-use std::collections::VecDeque;
+use std::collections::{BTreeSet, HashMap, VecDeque};
 use std::fmt;
 use std::io::{self, Write};
 
+// lr graph
 #[derive(Debug)]
 pub struct LrGraph<'a> {
     rules: &'a Vec<FlatRuleDef<'a>>,
     states: Vec<LrState<'a>>,
+    terminals: BTreeSet<&'a str>,
+    non_terminals: BTreeSet<&'a str>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -20,6 +23,28 @@ pub struct LrState<'a> {
     index: usize,
     prods: Vec<ProdState>,
     edges: Vec<(&'a FlatProd<'a>, usize)>,
+}
+
+// Lr tables
+#[derive(Debug)]
+pub struct LrTable<'a> {
+    rows: Vec<LrTableEntry<'a>>,
+    graph: &'a LrGraph<'a>,
+}
+
+#[derive(Debug, Clone)]
+pub enum LrAction {
+    Shift(usize),
+    Reduce(usize),
+    Accept
+}
+
+#[derive(Debug, Clone)]
+pub struct LrTableEntry<'a> {
+    // terminals -> action
+    actions: HashMap<&'a str, Vec<LrAction>>,
+    // non terminals -> goto
+    goto: HashMap<&'a str, usize>,
 }
 
 pub fn closure<'a>(rules: &'a Vec<FlatRuleDef<'a>>, orig: Vec<ProdState>) -> Vec<ProdState> {
@@ -60,7 +85,11 @@ pub fn lr_graph<'a>(rules: &'a Vec<FlatRuleDef<'a>>) -> LrGraph<'a> {
     let mut graph = LrGraph {
         rules,
         states: vec![],
+        terminals: BTreeSet::new(),
+        non_terminals: BTreeSet::new(),
     };
+    graph.terminals.insert("#");
+
     let mut nodes = 1;
     let mut init_state = LrState {
         index: 0,
@@ -102,6 +131,12 @@ pub fn lr_graph<'a>(rules: &'a Vec<FlatRuleDef<'a>>) -> LrGraph<'a> {
             possible_prods.sort();
             possible_prods.dedup();
             for prod in possible_prods {
+                match prod {
+                    FlatProd::Terminal(name) => graph.terminals.insert(name),
+                    FlatProd::NonTerminal(name) => graph.non_terminals.insert(name),
+                    _ => false
+                };
+
                 let mut new_state = LrState {
                     index: nodes,
                     prods: vec![],
@@ -230,5 +265,107 @@ impl<'a> LrGraph<'a> {
         }
         writeln!(f, "}}")?;
         Ok(String::from_utf8(f.into_inner()).unwrap())
+    }
+}
+
+pub fn lr0_table<'a>(graph: &'a LrGraph<'a>) -> LrTable<'a> {
+    let mut rows = vec![
+        LrTableEntry {
+            actions: HashMap::new(),
+            goto: HashMap::new()
+        };
+        graph.states.len()
+    ];
+    for state in graph.states.iter() {
+        for (prod, index) in state.edges.iter() {
+            match prod {
+                FlatProd::NonTerminal(name) => {
+                    // goto
+                    rows[state.index].goto.insert(name, *index);
+                }
+                FlatProd::Terminal(name) => {
+                    // shift
+                    rows[state.index]
+                        .actions
+                        .entry(name)
+                        .or_insert(vec![])
+                        .push(LrAction::Shift(*index));
+                }
+                _ => unimplemented!(),
+            }
+        }
+        for ProdState {
+            position,
+            rule_index,
+        } in state.prods.iter()
+        {
+            let rule = &graph.rules[*rule_index];
+            if *position == rule.prod.len() {
+                // prod
+                if *rule_index == 0 {
+                    // accept
+                    rows[state.index]
+                        .actions
+                        .entry("#")
+                        .or_insert(vec![])
+                        .push(LrAction::Accept);
+                } else {
+                    // reduce for all terminals
+                    for prod in graph.terminals.iter() {
+                        rows[state.index]
+                            .actions
+                            .entry(prod)
+                            .or_insert(vec![])
+                            .push(LrAction::Reduce(*rule_index));
+                    }
+                }
+            }
+        }
+    }
+    LrTable { rows, graph }
+}
+
+impl<'a> fmt::Display for LrTable<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "State\t")?;
+        for prod in self.graph.terminals.iter() {
+            write!(f, "{}\t", prod)?;
+        }
+        for prod in self.graph.non_terminals.iter() {
+            write!(f, "{}\t", prod)?;
+        }
+        writeln!(f)?;
+        for (index, row) in self.rows.iter().enumerate() {
+            write!(f, "{}\t", index)?;
+            for prod in self.graph.terminals.iter() {
+                if let Some(vec) = row.actions.get(prod) {
+                    for (idx, action) in vec.iter().enumerate() {
+                        if idx > 0 {
+                            write!(f, "/")?;
+                        }
+                        write!(f, "{}", action)?;
+                    }
+                }
+                write!(f, "\t")?;
+            }
+            for prod in self.graph.non_terminals.iter() {
+                if let Some(target) = row.goto.get(prod) {
+                    write!(f, "{}", target)?;
+                }
+                write!(f, "\t")?;
+            }
+            writeln!(f)?;
+        }
+        Ok(())
+    }
+}
+
+impl<'a> fmt::Display for LrAction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LrAction::Shift(s) => write!(f, "s{}", s),
+            LrAction::Reduce(r) => write!(f, "r{}", r),
+            LrAction::Accept => write!(f, "acc"),
+        }
     }
 }

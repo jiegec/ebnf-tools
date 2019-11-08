@@ -17,7 +17,7 @@ fn main() {
     let alloc = ebnf_gen::ASTAlloc::default();
     let ebnf = ebnf_gen::work(&code, &alloc);
     if let Ok(ebnf) = ebnf {
-        println!("{}", ebnf.generate(&ebnf));
+        println!("{}", ebnf.generate(&ebnf, 30));
     } else {
         println!("{:?}", ebnf.unwrap_err());
     }

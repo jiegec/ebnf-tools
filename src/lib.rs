@@ -2,11 +2,13 @@
 
 mod ast;
 mod errors;
+mod flatten;
 mod gen;
 mod loc;
 
 pub use ast::*;
 pub use errors::*;
+pub use flatten::*;
 pub use gen::*;
 pub use loc::*;
 
@@ -149,7 +151,8 @@ impl<'p> Parser<'p> {
 
     #[rule(Prod1 -> Prod1 Plus)]
     fn rule_plus(&self, p: &'p Prod<'p>, _p: Token<'p>) -> &'p Prod<'p> {
-        self.alloc.prod.alloc(Prod::Plus(p))
+        let star = self.alloc.prod.alloc(Prod::Star(p));
+        self.alloc.prod.alloc(Prod::Concat(p, star))
     }
 
     #[rule(Prod1 -> Prod1 Opt)]

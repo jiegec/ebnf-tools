@@ -52,14 +52,6 @@ impl<'a> Generate for Prod<'a> {
                 }
                 result
             }
-            Plus(p) => {
-                let mut result = String::new();
-                result.push_str(&p.generate(file));
-                while random::<f64>() < 0.6 {
-                    result.push_str(&p.generate(file));
-                }
-                result
-            }
             Eps => String::new(),
         }
     }

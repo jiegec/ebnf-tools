@@ -1,0 +1,4 @@
+option ::= 'abc' 'option'? 'def';
+star ::= 'abc' 'star'* 'def';
+plus ::= 'abc' 'plus'+ 'def';
+complex ::= 'abc'?*+;

@@ -15,7 +15,7 @@ pub struct File<'a> {
     pub mapping: RefCell<BTreeMap<&'a str, &'a RuleDef<'a>>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RuleDef<'a> {
     pub name: &'a str,
     pub prod: Vec<&'a Prod<'a>>,
@@ -28,6 +28,18 @@ pub enum Prod<'a> {
     NonTerminal(&'a str),
     Optional(&'a Prod<'a>),
     Star(&'a Prod<'a>),
-    Plus(&'a Prod<'a>),
+    Eps,
+}
+
+#[derive(Debug)]
+pub struct FlatRuleDef<'a> {
+    pub name: &'a str,
+    pub prod: Vec<&'a FlatProd<'a>>,
+}
+
+#[derive(Debug)]
+pub enum FlatProd<'a> {
+    Terminal(&'a str),
+    NonTerminal(&'a str),
     Eps,
 }

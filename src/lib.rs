@@ -67,6 +67,7 @@ impl Lexer<'_> {
 #[lex(
     r##"
 priority = [
+    { assoc = 'left', terms = ['Star', 'Plus'] }
 ]
 
 [lexical]
@@ -141,42 +142,47 @@ impl<'p> Parser<'p> {
         vec![]
     }
 
-    #[rule(Prod -> LPar Prod RPar)]
+    #[rule(Prod1 -> LPar Prod RPar)]
     fn rule_paren(&self, _l: Token<'p>, p: &'p Prod<'p>, _r: Token<'p>) -> &'p Prod<'p> {
         p
     }
 
-    #[rule(Prod -> Prod Plus)]
+    #[rule(Prod1 -> Prod1 Plus)]
     fn rule_plus(&self, p: &'p Prod<'p>, _p: Token<'p>) -> &'p Prod<'p> {
         self.alloc.prod.alloc(Prod::Plus(p))
     }
 
-    #[rule(Prod -> Prod Opt)]
+    #[rule(Prod1 -> Prod1 Opt)]
     fn rule_opt(&self, p: &'p Prod<'p>, _o: Token<'p>) -> &'p Prod<'p> {
         self.alloc.prod.alloc(Prod::Optional(p))
     }
 
-    #[rule(Prod -> Prod Star)]
+    #[rule(Prod1 -> Prod1 Star)]
     fn rule_star(&self, p: &'p Prod<'p>, _s: Token<'p>) -> &'p Prod<'p> {
         self.alloc.prod.alloc(Prod::Star(p))
     }
 
-    #[rule(Prod -> Prod Prod)]
+    #[rule(Prod -> Prod Prod1)]
     fn rule_concat(&self, l: &'p Prod<'p>, r: &'p Prod<'p>) -> &'p Prod<'p> {
         self.alloc.prod.alloc(Prod::Concat(l, r))
     }
 
-    #[rule(Prod -> Eps)]
+    #[rule(Prod -> Prod1)]
+    fn rule_unit(&self, l: &'p Prod<'p>) -> &'p Prod<'p> {
+        l
+    }
+
+    #[rule(Prod1 -> Eps)]
     fn prod_eps(&self, _e: Token<'p>) -> &'p Prod<'p> {
         self.alloc.prod.alloc(Prod::Eps)
     }
 
-    #[rule(Prod -> Id)]
+    #[rule(Prod1 -> Id)]
     fn prod_id(&self, id: Token<'p>) -> &'p Prod<'p> {
         self.alloc.prod.alloc(Prod::NonTerminal(id.str()))
     }
 
-    #[rule(Prod -> StringLit)]
+    #[rule(Prod1 -> StringLit)]
     fn prod_string(&self, lit: Token<'p>) -> &'p Prod<'p> {
         self.alloc.prod.alloc(Prod::Terminal(lit.str()))
     }

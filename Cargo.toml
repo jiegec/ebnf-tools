@@ -10,3 +10,4 @@ edition = "2018"
 parser-macros = { git = "https://github.com/MashPlant/lalr1" }
 typed-arena = "1.4.1"
 rand = "0.7.2"
+clap = "2.33"

@@ -18,7 +18,7 @@ pub struct ProdState {
 pub struct LrState<'a> {
     index: usize,
     prods: Vec<ProdState>,
-    edges: Vec<(FlatProd<'a>, &'a LrState<'a>)>,
+    edges: Vec<(&'a FlatProd<'a>, usize)>,
 }
 
 pub fn closure<'a>(rules: &'a Vec<FlatRuleDef<'a>>, orig: Vec<ProdState>) -> Vec<ProdState> {
@@ -123,9 +123,13 @@ pub fn lr_graph<'a>(rules: &'a Vec<FlatRuleDef<'a>>) -> LrGraph<'a> {
                 let exists = graph
                     .states
                     .iter()
-                    .any(|state| state.prods == new_state.prods);
-                if !exists {
+                    .find(|state| state.prods == new_state.prods)
+                    .map(|state| (*state).clone());
+                if let Some(old) = exists {
+                    graph.states[current].edges.push((prod, old.index));
+                } else {
                     nodes += 1;
+                    graph.states[current].edges.push((prod, new_state.index));
                     pending.push_back(new_state.index);
                     graph.states.push(new_state);
                 }
@@ -160,7 +164,20 @@ impl<'a> fmt::Display for LrGraph<'a> {
                         FlatProd::Eps => write!(f, " _")?,
                     }
                 }
+                if rule.prod.len() == *position {
+                    write!(f, " .")?;
+                }
                 write!(f, ", ")?;
+            }
+            writeln!(f)?;
+            write!(f, "Edges: ")?;
+            for (prod, state) in state.edges.iter() {
+                match prod {
+                    FlatProd::Terminal(name) | FlatProd::NonTerminal(name) => {
+                        write!(f, " {} -> {}", name, state)?
+                    }
+                    FlatProd::Eps => write!(f, " _ -> {}", state)?,
+                }
             }
             writeln!(f)?;
         }

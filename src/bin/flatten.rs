@@ -1,7 +1,7 @@
 use clap::{App, Arg};
-use ebnf_gen;
-use ebnf_gen::flatten;
-use ebnf_gen::FlatProd;
+use ebnf_tools;
+use ebnf_tools::flatten;
+use ebnf_tools::FlatProd;
 use std::fs;
 
 fn main() {

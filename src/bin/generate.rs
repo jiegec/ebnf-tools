@@ -1,6 +1,6 @@
 use clap::{App, Arg};
-use ebnf_gen;
-use ebnf_gen::Generate;
+use ebnf_tools;
+use ebnf_tools::Generate;
 use std::fs;
 
 fn main() {

@@ -1,6 +1,7 @@
 use crate::*;
 use std::collections::VecDeque;
 use std::fmt;
+use std::io::{self, Write};
 
 #[derive(Debug)]
 pub struct LrGraph<'a> {
@@ -171,16 +172,63 @@ impl<'a> fmt::Display for LrGraph<'a> {
             }
             writeln!(f)?;
             write!(f, "Edges: ")?;
-            for (prod, state) in state.edges.iter() {
+            for (prod, next_state) in state.edges.iter() {
                 match prod {
                     FlatProd::Terminal(name) | FlatProd::NonTerminal(name) => {
-                        write!(f, " {} -> {}", name, state)?
+                        write!(f, " {} -> {}", name, next_state)?
                     }
-                    FlatProd::Eps => write!(f, " _ -> {}", state)?,
+                    FlatProd::Eps => write!(f, " _ -> {}", next_state)?,
                 }
             }
             writeln!(f)?;
         }
         Ok(())
+    }
+}
+
+impl<'a> LrGraph<'a> {
+    pub fn print_dot(&self) -> io::Result<String> {
+        let res: Vec<u8> = Vec::new();
+        let mut f = io::Cursor::new(res);
+        writeln!(f, "digraph {{")?;
+        for state in self.states.iter() {
+            write!(f, "{}[shape=box, label=\"I{}:", state.index, state.index)?;
+            for ProdState {
+                position,
+                rule_index,
+            } in state.prods.iter()
+            {
+                let rule = &self.rules[*rule_index];
+                write!(f, "{}->", rule.name)?;
+                for (idx, prod) in rule.prod.iter().enumerate() {
+                    if idx == *position {
+                        write!(f, " .")?;
+                    }
+                    match prod {
+                        FlatProd::Terminal(name) | FlatProd::NonTerminal(name) => {
+                            write!(f, " {}", name)?
+                        }
+                        FlatProd::Eps => write!(f, " _")?,
+                    }
+                }
+                if rule.prod.len() == *position {
+                    write!(f, " .")?;
+                }
+                write!(f, "\\n")?;
+            }
+            writeln!(f, "\"]")?;
+            for (prod, next_state) in state.edges.iter() {
+                match prod {
+                    FlatProd::Terminal(name) | FlatProd::NonTerminal(name) => {
+                        writeln!(f, "{} -> {} [label=\"{}\"]", state.index, next_state, name)?
+                    }
+                    FlatProd::Eps => {
+                        writeln!(f, "{} -> {} [label=\"_\"]", state.index, next_state)?
+                    }
+                }
+            }
+        }
+        writeln!(f, "}}")?;
+        Ok(String::from_utf8(f.into_inner()).unwrap())
     }
 }

@@ -45,3 +45,20 @@ pub enum FlatProd<'a> {
     NonTerminal(&'a str),
     Eps,
 }
+
+impl<'a> FlatProd<'a> {
+    pub fn name(&self) -> &'a str {
+        match self {
+            FlatProd::Terminal(t) => t,
+            FlatProd::NonTerminal(t) => t,
+            FlatProd::Eps => "_",
+        }
+    }
+
+    pub fn is_eps(&self) -> bool {
+        match self {
+            FlatProd::Eps => true,
+            _ => false,
+        }
+    }
+}

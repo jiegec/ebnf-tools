@@ -4,17 +4,17 @@ mod ast;
 mod errors;
 mod flatten;
 mod gen;
+mod ll;
 mod loc;
 mod lr;
-mod ll;
 
 pub use ast::*;
 pub use errors::*;
 pub use flatten::*;
 pub use gen::*;
+pub use ll::*;
 pub use loc::*;
 pub use lr::*;
-pub use ll::*;
 
 use parser_macros::lalr1;
 use std::cell::RefCell;

@@ -10,6 +10,8 @@ pub struct LrGraph<'a> {
     states: Vec<LrState<'a>>,
     terminals: BTreeSet<&'a str>,
     non_terminals: BTreeSet<&'a str>,
+    first_s: TermSet<'a>,
+    follow_s: TermSet<'a>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -36,7 +38,7 @@ pub struct LrTable<'a> {
 pub enum LrAction {
     Shift(usize),
     Reduce(usize),
-    Accept
+    Accept,
 }
 
 #[derive(Debug, Clone)]
@@ -82,11 +84,15 @@ pub fn closure<'a>(rules: &'a Vec<FlatRuleDef<'a>>, orig: Vec<ProdState>) -> Vec
 }
 
 pub fn lr_graph<'a>(rules: &'a Vec<FlatRuleDef<'a>>) -> LrGraph<'a> {
+    let first_s = first_set(rules);
+    let follow_s = follow_set(rules, &first_s).clone();
     let mut graph = LrGraph {
         rules,
         states: vec![],
         terminals: BTreeSet::new(),
         non_terminals: BTreeSet::new(),
+        first_s,
+        follow_s,
     };
     graph.terminals.insert("#");
 
@@ -121,7 +127,9 @@ pub fn lr_graph<'a>(rules: &'a Vec<FlatRuleDef<'a>>) -> LrGraph<'a> {
                 .iter()
                 .filter_map(|prod_state| {
                     let rule = &rules[prod_state.rule_index];
-                    if prod_state.position < rule.prod.len() {
+                    if prod_state.position < rule.prod.len()
+                        && !rule.prod[prod_state.position].is_eps()
+                    {
                         Some(rule.prod[prod_state.position])
                     } else {
                         None
@@ -130,11 +138,14 @@ pub fn lr_graph<'a>(rules: &'a Vec<FlatRuleDef<'a>>) -> LrGraph<'a> {
                 .collect();
             possible_prods.sort();
             possible_prods.dedup();
-            for prod in possible_prods {
+            for (idx, prod) in possible_prods.into_iter().enumerate() {
                 match prod {
                     FlatProd::Terminal(name) => graph.terminals.insert(name),
                     FlatProd::NonTerminal(name) => graph.non_terminals.insert(name),
-                    _ => false
+                    FlatProd::Eps => {
+                        assert_eq!(idx, 0);
+                        break;
+                    }
                 };
 
                 let mut new_state = LrState {
@@ -197,7 +208,9 @@ impl<'a> fmt::Display for LrGraph<'a> {
                         FlatProd::Terminal(name) | FlatProd::NonTerminal(name) => {
                             write!(f, " {}", name)?
                         }
-                        FlatProd::Eps => write!(f, " _")?,
+                        FlatProd::Eps => {
+                            assert_eq!(idx, 0);
+                        }
                     }
                 }
                 if rule.prod.len() == *position {
@@ -300,7 +313,7 @@ pub fn lr0_table<'a>(graph: &'a LrGraph<'a>) -> LrTable<'a> {
         } in state.prods.iter()
         {
             let rule = &graph.rules[*rule_index];
-            if *position == rule.prod.len() {
+            if *position == rule.prod.len() || (rule.prod.len() == 1 && rule.prod[0].is_eps()) {
                 // prod
                 if *rule_index == 0 {
                     // accept
@@ -315,6 +328,63 @@ pub fn lr0_table<'a>(graph: &'a LrGraph<'a>) -> LrTable<'a> {
                         rows[state.index]
                             .actions
                             .entry(prod)
+                            .or_insert(vec![])
+                            .push(LrAction::Reduce(*rule_index));
+                    }
+                }
+            }
+        }
+    }
+    LrTable { rows, graph }
+}
+
+pub fn slr1_table<'a>(graph: &'a LrGraph<'a>) -> LrTable<'a> {
+    let mut rows = vec![
+        LrTableEntry {
+            actions: HashMap::new(),
+            goto: HashMap::new()
+        };
+        graph.states.len()
+    ];
+    for state in graph.states.iter() {
+        for (prod, index) in state.edges.iter() {
+            match prod {
+                FlatProd::NonTerminal(name) => {
+                    // goto
+                    rows[state.index].goto.insert(name, *index);
+                }
+                FlatProd::Terminal(name) => {
+                    // shift
+                    rows[state.index]
+                        .actions
+                        .entry(name)
+                        .or_insert(vec![])
+                        .push(LrAction::Shift(*index));
+                }
+                _ => unimplemented!(),
+            }
+        }
+        for ProdState {
+            position,
+            rule_index,
+        } in state.prods.iter()
+        {
+            let rule = &graph.rules[*rule_index];
+            if *position == rule.prod.len() || (rule.prod.len() == 1 && rule.prod[0].is_eps()) {
+                // prod
+                if *rule_index == 0 {
+                    // accept
+                    rows[state.index]
+                        .actions
+                        .entry("#")
+                        .or_insert(vec![])
+                        .push(LrAction::Accept);
+                } else {
+                    // reduce for all terminals in FOLLOW
+                    for prod in graph.follow_s.get(rule.name).unwrap() {
+                        rows[state.index]
+                            .actions
+                            .entry(prod.name().clone())
                             .or_insert(vec![])
                             .push(LrAction::Reduce(*rule_index));
                     }

@@ -17,12 +17,18 @@ fn flatten_one<'a>(
     match prod {
         Prod::Eps | Prod::Terminal(_) | Prod::NonTerminal(_) => (name, prod, vec![]),
         Prod::Concat(l, r) => {
-            let (new_name, ll, l_res) = flatten_one(name, l, alloc);
-            if l_res.len() > 0 {
-                (new_name, alloc.prod.alloc(Prod::Concat(ll, r)), l_res)
+            if let Prod::Eps = l {
+                flatten_one(name, r, alloc)
+            } else if let Prod::Eps = r {
+                flatten_one(name, l, alloc)
             } else {
-                let (new_name, rr, r_res) = flatten_one(name, r, alloc);
-                (new_name, alloc.prod.alloc(Prod::Concat(l, rr)), r_res)
+                let (new_name, ll, l_res) = flatten_one(name, l, alloc);
+                if l_res.len() > 0 {
+                    (new_name, alloc.prod.alloc(Prod::Concat(ll, r)), l_res)
+                } else {
+                    let (new_name, rr, r_res) = flatten_one(name, r, alloc);
+                    (new_name, alloc.prod.alloc(Prod::Concat(l, rr)), r_res)
+                }
             }
         }
         Prod::Optional(o) => {

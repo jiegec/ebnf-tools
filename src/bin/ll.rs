@@ -25,10 +25,20 @@ fn main() {
         let first_s = first_set(&res);
         let follow_s = follow_set(&res, &first_s);
         if first {
-            println!("FIRST: {:?}", first_s);
+            let mut first: Vec<_> = first_s.iter().collect();
+            first.sort();
+            println!("FIRST:");
+            for item in first {
+                println!("{}:  {:?}", item.0, item.1);
+            }
         }
         if follow {
-            println!("FOLLOW: {:?}", follow_s);
+            let mut follow: Vec<_> = follow_s.iter().collect();
+            follow.sort();
+            println!("FOLLOW:");
+            for item in follow {
+                println!("{}:  {:?}", item.0, item.1);
+            }
         }
     } else {
         println!("{:?}", ebnf.unwrap_err());

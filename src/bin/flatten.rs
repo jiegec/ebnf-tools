@@ -1,7 +1,5 @@
 use clap::{App, Arg};
-use ebnf_tools;
-use ebnf_tools::flatten;
-use ebnf_tools::FlatProd;
+use ebnf_tools::*;
 use std::fs;
 
 fn main() {
@@ -15,9 +13,9 @@ fn main() {
         .get_matches();
     let opts = matches.value_of("file").unwrap();
     let code = fs::read_to_string(opts).unwrap();
-    let ast_alloc = ebnf_gen::ASTAlloc::default();
-    let flatten_alloc = ebnf_gen::FlattenAlloc::default();
-    let ebnf = ebnf_gen::work(&code, &ast_alloc);
+    let ast_alloc = ASTAlloc::default();
+    let flatten_alloc = FlattenAlloc::default();
+    let ebnf = work(&code, &ast_alloc);
     if let Ok(ebnf) = ebnf {
         let res = flatten(&ebnf, &flatten_alloc);
         for rule in res {

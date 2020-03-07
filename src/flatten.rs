@@ -1,4 +1,5 @@
 use crate::ast::*;
+use std::cell::Cell;
 use typed_arena::Arena;
 
 #[derive(Default)]
@@ -6,6 +7,7 @@ pub struct FlattenAlloc<'a> {
     pub string: Arena<String>,
     pub prod: Arena<Prod<'a>>,
     pub flat_prod: Arena<FlatProd<'a>>,
+    counter: Cell<usize>,
 }
 
 // returns new_name, new_prod, new_rules
@@ -32,17 +34,19 @@ fn flatten_one<'a>(
             }
         }
         Prod::Optional(o) => {
-            let orig_name = format!("{}_orig", name);
+            let orig_name = format!("{}", name);
             let orig_name = alloc.string.alloc(orig_name);
-            let opt_name = format!("{}_opt", name);
+            let opt_name = format!("{}_opt{}", name, alloc.counter.get());
+            alloc.counter.set(alloc.counter.get() + 1);
             let opt_name = alloc.string.alloc(opt_name);
             let opt = alloc.prod.alloc(Prod::NonTerminal(opt_name));
             (orig_name, opt, vec![(opt_name, o), (opt_name, &Prod::Eps)])
         }
         Prod::Star(o) => {
-            let orig_name = format!("{}_orig", name);
+            let orig_name = format!("{}", name);
             let orig_name = alloc.string.alloc(orig_name);
-            let star_name = format!("{}_star", name);
+            let star_name = format!("{}_star{}", name, alloc.counter.get());
+            alloc.counter.set(alloc.counter.get() + 1);
             let star_name = alloc.string.alloc(star_name);
             let star = alloc.prod.alloc(Prod::NonTerminal(star_name));
             let concat = alloc.prod.alloc(Prod::Concat(o, star));

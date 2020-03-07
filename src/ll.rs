@@ -54,7 +54,10 @@ pub fn follow_set<'a>(rules: &'a Vec<FlatRuleDef<'a>>, first: &TermSet<'a>) -> T
                     for j in (i + 1)..rule.prod.len() {
                         match &rule.prod[j] {
                             FlatProd::NonTerminal(follow_name) => {
-                                let follow = first.get(follow_name).unwrap().clone();
+                                let follow = first
+                                    .get(follow_name)
+                                    .expect(&format!("can't find {}", follow_name))
+                                    .clone();
                                 let cur_follow = cur.entry(name).or_insert(BTreeSet::new());
                                 *cur_follow = cur_follow.union(&follow).cloned().collect();
                                 cur_follow.remove(&FlatProd::Eps);
